@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELİTE rank v11.0 - Nihai Sürüm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Impact&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; overflow: hidden; background: linear-gradient(135deg, #1f2937, #374151); color: #e5e7eb; }
+        .font-impact { font-family: 'Impact', sans-serif; }
+        .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out; will-change: transform, opacity; }
+        .hidden-screen { opacity: 0; transform: scale(0.95); pointer-events: none; }
+        .visible-screen { opacity: 1; transform: scale(1); }
+        .btn { transition: all 0.2s ease; border-radius: 0.75rem; border-bottom: 4px solid rgba(0,0,0,0.3); font-weight: 700; color: white; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; }
+        .btn:hover:not(:disabled) { transform: translateY(-3px) scale(1.05); filter: brightness(1.15); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .btn:active:not(:disabled) { transform: translateY(0px) scale(1); border-bottom-width: 2px; }
+        .btn:disabled { filter: grayscale(0.7); cursor: not-allowed; }
+        .feedback-toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); padding: 1rem 2rem; background-color: #f1c40f; color: #1f2937; border-radius: 0.75rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 1.2rem; font-weight: 700; z-index: 10001; transition: top 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        .feedback-toast.show { top: 20px; }
+        .shop-card, .rank-card, .quest-card, .leaderboard-row { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; padding: 1rem; transition: all 0.3s ease; }
+        .shop-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 10000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.visible { opacity: 1; pointer-events: all; }
+        .modal-content { background: #2c3e50; padding: 2rem; border-radius: 1rem; border: 1px solid #4a5568; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: transform 0.3s ease; }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .avatar-slot { width: 80%; height: 80%; border-radius: 50%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .avatar-slot svg { width: 80%; height: 80%; }
+        .mystery-box { cursor: pointer; transition: transform 0.3s ease; }
+        .mystery-box:hover { transform: scale(1.1) rotate(-5deg); }
+    </style>
+</head>
+<body class="bg-gray-800 text-white overflow-hidden">
+
+    <div id="game-container" class="relative w-screen h-screen max-w-full max-h-full">
+        <!-- KULLANICI GİRİŞ EKRANI -->
+        <div id="username-screen" class="screen visible-screen bg-gray-900 flex flex-col justify-center items-center p-4">
+            <h1 class="font-impact text-7xl md:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 tracking-wider">ELİTE rank</h1>
+            <p class="mt-4 text-lg text-gray-300">Oyuncu Adınızı Girin ve Enter'a Basın</p>
+            <input type="text" id="username-input" class="mt-4 w-64 md:w-80 p-3 bg-gray-800 border-2 border-gray-600 rounded-lg text-center text-xl focus:outline-none focus:border-yellow-500 transition-all">
+        </div>
+
+        <!-- ANA MENÜ EKRANI -->
+        <div id="main-menu-screen" class="screen hidden-screen bg-[#2c3e50] p-4 md:p-6">
+            <div class="flex justify-between items-start">
+                <div class="relative w-28 h-28 md:w-36 md:h-36 flex justify-center items-center cursor-pointer" data-action="show-profile">
+                    <div id="level-frame" class="absolute inset-0 border-8 rounded-2xl transition-all duration-500 flex justify-center items-center">
+                         <div id="avatar-display" class="avatar-slot"></div>
+                    </div>
+                    <div id="player-name-tag" class="absolute -bottom-4 bg-gray-900 px-3 py-1 rounded-full text-center text-lg font-bold"></div>
+                </div>
+                <div class="flex-grow mx-4 md:mx-6 mt-2">
+                    <div id="level-display" class="text-center font-bold text-2xl mb-2">Seviye: 1</div>
+                    <div class="w-full bg-gray-700 rounded-full h-6 border-2 border-gray-900"><div id="xp-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div></div>
+                    <p id="xp-label" class="text-center text-sm mt-1">XP: 0/100</p>
+                    <div id="win-streak-display" class="text-center mt-2 font-bold text-orange-400 text-lg hidden">🔥 Galibiyet Serisi: 0</div>
+                </div>
+                <div class="text-right space-y-2"><p id="money-text" class="text-lg font-bold bg-yellow-500/20 px-3 py-1 rounded-lg">Para: 100</p><p id="trophies-text" class="text-lg font-bold bg-blue-500/20 px-3 py-1 rounded-lg">Kupa: 0</p></div>
+            </div>
+            
+            <div class="absolute bottom-6 left-6 right-6">
+                <div class="flex justify-between items-end w-full">
+                    <div class="flex flex-wrap gap-4">
+                        <button data-action="show-quests" class="btn bg-gradient-to-r from-yellow-500 to-orange-500">Görevler</button>
+                        <button data-action="show-rank" class="btn bg-gradient-to-r from-gray-600 to-gray-800">Rankım</button>
+                        <button data-action="show-shop" class="btn bg-gradient-to-r from-purple-500 to-indigo-600">Dükkan</button>
+                        <button data-action="show-leaderboard" class="btn bg-gradient-to-r from-pink-500 to-rose-500">Liderler</button>
+                        <button id="perks-btn" data-action="show-perks" class="btn bg-gradient-to-r from-green-500 to-emerald-600 hidden">Yetenekler</button>
+                    </div>
+                    <button data-action="start-match" class="btn bg-gradient-to-r from-blue-500 to-teal-400 text-2xl px-10 py-6">Eşleşme Bul</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MAÇ EKRANI -->
+        <div id="match-screen" class="screen hidden-screen bg-[#34495e] flex flex-col justify-between p-4 md:p-8">
+             <div class="flex justify-around items-center text-center"><div><h2 id="player-name-match" class="text-2xl md:text-4xl font-bold text-green-400">Oyuncu</h2><p id="player-score-match" class="text-5xl md:text-7xl font-impact">0</p></div><p class="text-6xl md:text-8xl font-impact text-[#f1c40f]">VS</p><div><h2 id="opponent-name-match" class="text-2xl md:text-4xl font-bold text-red-400">Rakip</h2><p id="opponent-score-match" class="text-5xl md:text-7xl font-impact">0</p></div></div>
+            <div id="match-result-area" class="text-center h-40 flex flex-col justify-center items-center"><p id="match-info-text" class="text-4xl font-bold">Seçimini Yap!</p></div>
+            <div id="match-buttons-container" class="flex justify-center space-x-4 md:space-x-8"><button data-choice="Taş" class="btn match-choice-btn bg-gray-500 hover:bg-gray-600 text-2xl w-28 h-28 md:w-36 md:h-36">Taş</button><button data-choice="Kağıt" class="btn match-choice-btn bg-gray-500 hover:bg-gray-600 text-2xl w-28 h-28 md:w-36 md:h-36">Kağıt</button><button data-choice="Makas" class="btn match-choice-btn bg-gray-500 hover:bg-gray-600 text-2xl w-28 h-28 md:w-36 md:h-36">Makas</button></div>
+        </div>
+
+        <!-- MODAL EKRANI -->
+        <div id="modal-overlay" class="modal-overlay">
+            <div id="modal-content" class="modal-content">
+                <h2 id="modal-title" class="font-impact text-4xl text-center"></h2>
+                <div id="modal-body" class="mt-6 space-y-4"></div>
+                <button id="modal-close-btn" class="btn bg-red-600 w-full mt-6">Kapat</button>
+            </div>
+        </div>
+    </div>
+    <div id="feedback-toast" class="feedback-toast">Mesaj</div>
+
+    <script>
+    // --- OYUNUN BEYNİ: v11.0 Sıfırdan ve Hatasız Script ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elementlerini Topla ---
+        const ui = {
+            screens: { username: document.getElementById('username-screen'), mainMenu: document.getElementById('main-menu-screen'), match: document.getElementById('match-screen') },
+            usernameInput: document.getElementById('username-input'),
+            mainMenu: {
+                levelFrame: document.getElementById('level-frame'), avatarDisplay: document.getElementById('avatar-display'), playerNameTag: document.getElementById('player-name-tag'), levelDisplay: document.getElementById('level-display'), xpBar: document.getElementById('xp-bar'), xpLabel: document.getElementById('xp-label'), winStreak: document.getElementById('win-streak-display'), money: document.getElementById('money-text'), trophies: document.getElementById('trophies-text')
+            },
+            match: {
+                playerName: document.getElementById('player-name-match'), playerScore: document.getElementById('player-score-match'), opponentName: document.getElementById('opponent-name-match'), opponentScore: document.getElementById('opponent-score-match'), infoText: document.getElementById('match-info-text'), buttonsContainer: document.getElementById('match-buttons-container')
+            },
+            modal: { overlay: document.getElementById('modal-overlay'), title: document.getElementById('modal-title'), body: document.getElementById('modal-body'), closeBtn: document.getElementById('modal-close-btn') },
+            feedbackToast: document.getElementById('feedback-toast'),
+            mainMenuContainer: document.getElementById('main-menu-screen')
+        };
+
+        // --- Oyun Verileri ve Sabitleri ---
+        let player, matchData, leaderboard;
+        const gameData = {
+            BOT_NAMES: ["Kenji", "Sven", "Marco", "Yusuf", "Shadow", "Ghost", "Blade", "Draco", "Elara", "Freya", "Ivan", "Javier", "Kağan", "Leila", "Niko", "Olga", "Pedro", "Quinn", "Ragnar", "Sofia", "Tariq", "Uma", "Viktor", "Wei", "Xena", "Yara", "Zane", "Astrid", "Bjorn", "Ciro", "Dante", "Ezio", "Fabio", "Giselle", "Hiro", "Isolde", "Jamal", "Katerina", "Lars", "Mona", "Nadia", "Omar", "Pablo", "Raj", "Sasha", "Tatiana", "Uri", "Valeria", "Wolfgang", "Yuki"],
+            RANKS: [{name:"Bronz",trophies:0,color:'#a1887f'},{name:"Gümüş",trophies:200,color:'#e0e0e0'},{name:"Altın",trophies:500,color:'#ffd700'},{name:"Elmas",trophies:1000,color:'#b9f2ff'},{name:"ELİTE",trophies:1750,color:'#ff69b4'},{name:"Usta",trophies:2800,color:'#fdba74'},{name:"Büyük Usta",trophies:4200,color:'#f87171'},{name:"Efsanevi",trophies:6000,color:'#c084fc'},{name:"Mistik",trophies:8500,color:'#67e8f9'},{name:"Tanrısal",trophies:12000,color:'linear-gradient(135deg, #fde047, #fca5a5, #a78bfa)'}],
+            SHOP_ITEMS: {
+                avatars: [{id:'default', name:'Varsayılan', price:0, svg:`<svg viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`},{id:'crown', name:'Kral Tacı', price:2000, svg:`<svg viewBox="0 0 24 24" fill="#ffd700"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>`}],
+                frames: [{id:'default', name:'Varsayılan', price:0, color:'#a0aec0'},{id:'ates',name:'Ateş',price:1000,color:'#ff4500'}],
+                powerups: [{id:'2x_trophy',name:'2x Kupa (1 Maç)',price:400},{id:'2x_money',name:'2x Para (3 Maç)',price:500},{id:'2x_xp',name:'2x XP (5 Maç)',price:300}]
+            },
+            ALL_QUESTS: [ { id: 'winMatches', text: (t) => `Toplam ${t} maç kazan.`, target: 3, reward: { money: 50, xp: 20 }, icon: '🏆' }, { id: 'playMatches', text: (t) => `${t} maç oyna.`, target: 5, reward: { money: 25, xp: 40 }, icon: '⚔️' }],
+            ALL_PERKS: [ {id:'money_perk', name:'Servet Avcısı', desc:'Maçlardan %10 daha fazla para kazan.', apply: (p) => p.perks.moneyBonus = 0.1}, {id:'xp_perk', name:'Tecrübe Avcısı', desc:'Maçlardan %10 daha fazla XP kazan.', apply: (p) => p.perks.xpBonus = 0.1}],
+            basePlayerData: { name: '', level: 1, xp: 0, xpToNextLevel: 100, money: 100, trophies: 0, equippedFrame: 'default', ownedFrames: {'default':{name:'Varsayılan', color:'#a0aec0'}}, powerups: {'2x_trophy':0, '2x_money':0, '2x_xp':0}, lastLoginDate: null, quests:{daily:[], questRefreshTime:0}, winStreak:0, lastMoves:[], perks:{unlocked:[], availablePoints:0, lastPerkLevel:0}, equippedAvatar:'default', ownedAvatars:['default'], stats: { wins: 0, losses: 0, ties: 0, mostUsed: {} }}
+        };
+
+        // --- Temel Yardımcı Fonksiyonlar ---
+        const showScreen = (screenName) => { Object.values(ui.screens).forEach(s => s.classList.add('hidden-screen')); ui.screens[screenName].classList.remove('hidden-screen'); };
+        const showFeedback = (message) => { ui.feedbackToast.textContent = message; ui.feedbackToast.classList.add('show'); setTimeout(() => ui.feedbackToast.classList.remove('show'), 3000); };
+        const saveGameData = () => { if(player) localStorage.setItem('eliteRankPlayer_' + player.name.toLowerCase(), JSON.stringify(player)); if(leaderboard) localStorage.setItem('eliteRankLeaderboard', JSON.stringify(leaderboard)); };
+        const randomChoice = () => ['Taş', 'Kağıt', 'Makas'][Math.floor(Math.random() * 3)];
+        const getPrice = (item) => Math.round(item.price * (1 - ((player && player.perks.shopDiscount) || 0)));
+
+        // --- Oyun Başlatma ve Veri Yönetimi ---
+        function initGame(name) {
+            const savedPlayerJSON = localStorage.getItem('eliteRankPlayer_' + name.toLowerCase());
+            if (savedPlayerJSON) {
+                player = { ...JSON.parse(JSON.stringify(gameData.basePlayerData)), ...JSON.parse(savedPlayerJSON) };
+            } else {
+                player = { ...JSON.parse(JSON.stringify(gameData.basePlayerData)), name: name };
+                showFeedback(`Hoş Geldin, ${player.name}!`);
+            }
+            const today = new Date().toLocaleDateString();
+            if (player.lastLoginDate !== today) {
+                player.lastLoginDate = today; player.money += 100;
+                showFeedback("Günlük Giriş Bonusu: +100 Para!");
+                generateDailyQuests();
+            }
+            if (!player.quests || Date.now() > (player.quests.questRefreshTime || 0)) {
+                 generateDailyQuests();
+            }
+            loadLeaderboard();
+            saveGameData();
+            updateAllUI();
+            showScreen('mainMenu');
+        }
+
+        // --- UI Güncelleme Fonksiyonları ---
+        function updateAllUI() {
+            if (!player) return;
+            const frameData = gameData.SHOP_ITEMS.frames.find(f => f.id === player.equippedFrame) || gameData.SHOP_ITEMS.frames[0];
+            const avatarData = gameData.SHOP_ITEMS.avatars.find(a => a.id === player.equippedAvatar) || gameData.SHOP_ITEMS.avatars[0];
+            
+            ui.mainMenu.levelFrame.style.borderColor = frameData.color;
+            ui.mainMenu.avatarDisplay.innerHTML = avatarData.svg;
+            ui.mainMenu.playerNameTag.textContent = player.name;
+            ui.mainMenu.levelDisplay.textContent = `Seviye: ${player.level}`;
+            ui.mainMenu.money.textContent = `Para: ${player.money}`;
+            ui.mainMenu.trophies.textContent = `Kupa: ${player.trophies}`;
+            ui.mainMenu.xpBar.style.width = `${(player.xp / player.xpToNextLevel) * 100}%`;
+            ui.mainMenu.xpLabel.textContent = `XP: ${player.xp}/${player.xpToNextLevel}`;
+        }
+        function updateModal(title, content) { ui.modal.title.innerHTML = title; ui.modal.body.innerHTML = content; ui.modal.overlay.classList.add('visible'); }
+        
+        // --- Maç Mantığı ---
+        function startMatch() {
+            matchData = { playerScore: 0, opponentScore: 0, opponentName: gameData.BOT_NAMES[Math.floor(Math.random()*gameData.BOT_NAMES.length)], state: 'player_turn' };
+            ui.match.playerName.textContent = player.name;
+            ui.match.opponentName.textContent = matchData.opponentName;
+            updateMatchUI();
+            showScreen('match');
+        }
+        function updateMatchUI() {
+            ui.match.playerScore.textContent = matchData.playerScore;
+            ui.match.opponentScore.textContent = matchData.opponentScore;
+            ui.match.infoText.textContent = matchData.state === 'player_turn' ? "Seçimini Yap!" : (matchData.result || '');
+            ui.match.buttonsContainer.style.display = matchData.state === 'player_turn' ? 'flex' : 'none';
+        }
+        function playRound(playerChoice) {
+            if (matchData.state !== 'player_turn') return;
+            matchData.state = 'reveal';
+            const opponentChoice = randomChoice();
+            let resultText = "", roundWin = false;
+            // Oyun istatistiklerini güncellemek için eklemeler
+            player.stats.mostUsed[playerChoice] = (player.stats.mostUsed[playerChoice] || 0) + 1;
+
+            if (playerChoice === opponentChoice) { resultText = "Berabere!"; player.stats.ties++; } 
+            else if ((playerChoice === 'Taş' && opponentChoice === 'Makas') || (playerChoice === 'Kağıt' && opponentChoice === 'Taş') || (playerChoice === 'Makas' && opponentChoice === 'Kağıt')) { resultText = "Kazandın!"; roundWin = true; }
+            else { resultText = "Kaybettin!";}
+            
+            if(roundWin) {
+                matchData.playerScore++;
+            } else if (playerChoice !== opponentChoice) {
+                matchData.opponentScore++;
+            }
+
+            matchData.result = `Sen: ${playerChoice} | Rakip: ${opponentChoice}<br>${resultText}`;
+            updateMatchUI();
+            setTimeout(checkMatchEnd, 2000);
+        }
+        function checkMatchEnd() {
+            if (matchData.playerScore >= 3 || matchData.opponentScore >= 3) {
+                const matchWin = matchData.playerScore >= 3;
+                
+                // Ödül ve ceza hesaplamaları
+                let moneyReward = matchWin ? 50 : 10; // Kazanana 50, kaybedene 10 para
+                let xpReward = matchWin ? 25 : 10; // Kazanana 25, kaybedene 10 XP
+                let trophyChange = matchWin ? 20 + player.winStreak * 2 : -10; // Kazanma serisine göre bonus kupa
+
+                // Perk bonuslarını uygula
+                moneyReward += Math.floor(moneyReward * (player.perks.moneyBonus || 0));
+                xpReward += Math.floor(xpReward * (player.perks.xpBonus || 0));
+
+                // Güçlendirmeleri uygula
+                if (player.powerups['2x_trophy'] > 0) { trophyChange *= 2; player.powerups['2x_trophy']--; }
+                if (player.powerups['2x_money'] > 0) { moneyReward *= 2; player.powerups['2x_money']--; }
+                if (player.powerups['2x_xp'] > 0) { xpReward *= 2; player.powerups['2x_xp']--; }
+
+                player.money += moneyReward;
+                addXp(xpReward);
+                player.trophies = Math.max(0, player.trophies + trophyChange);
+                
+                // İstatistikleri ve görevleri güncelle
+                checkQuests({ type: 'playMatches', value: 1 });
+                if (matchWin) {
+                    player.stats.wins++;
+                    player.winStreak++;
+                    checkQuests({ type: 'winMatches', value: 1 });
+                    showFeedback(`KAZANDIN! +${moneyReward} Para, +${xpReward} XP, +${trophyChange} Kupa`);
+                } else {
+                    player.stats.losses++;
+                    player.winStreak = 0;
+                     showFeedback(`Kaybettin. +${moneyReward} Para, +${xpReward} XP, ${trophyChange} Kupa`);
+                }
+                
+                updateLeaderboard(player);
+                saveGameData();
+                setTimeout(() => { updateAllUI(); showScreen('mainMenu'); }, 2500);
+            } else {
+                matchData.state = 'player_turn';
+                updateMatchUI();
+            }
+        }
+        function addXp(amount) { 
+            if(!player) return; 
+            player.xp += amount; 
+            while(player.xp >= player.xpToNextLevel) { 
+                player.xp -= player.xpToNextLevel; 
+                player.level++; 
+                player.xpToNextLevel = Math.floor(player.xpToNextLevel * 1.5); 
+                // Yetenek puanı ekleme
+                if(player.level % 5 === 0) {
+                    player.perks.availablePoints = (player.perks.availablePoints || 0) + 1;
+                    showFeedback(`Seviye atladın: ${player.level}! +1 Yetenek Puanı kazandın!`);
+                } else {
+                    showFeedback(`Seviye atladın: ${player.level}!`);
+                }
+            } 
+        }
+        function generateDailyQuests() {
+            if(!player) return;
+            player.quests.daily = [];
+            const availableQuests = [...gameData.ALL_QUESTS];
+            for (let i = 0; i < 2; i++) {
+                if (availableQuests.length === 0) break;
+                const questIndex = Math.floor(Math.random() * availableQuests.length);
+                const questTemplate = availableQuests.splice(questIndex, 1)[0];
+                const newQuest = { ...questTemplate, current: 0, completed: false, claimed: false };
+                player.quests.daily.push(newQuest);
+            }
+            player.quests.questRefreshTime = Date.now() + 2 * 60 * 60 * 1000; // 2 saat
+        }
+        function checkQuests(action) {
+            if (!player || !player.quests.daily) return;
+            player.quests.daily.forEach(q => {
+                if (!q.completed && q.id === action.type) {
+                    q.current += action.value;
+                    if (q.current >= q.target) {
+                        q.completed = true;
+                        showFeedback(`Görev Tamamlandı: ${q.text(q.target)}`);
+                    }
+                }
+            });
+        }
+        
+        // --- Liderlik Tablosu ---
+        function generateLeaderboard() {
+            leaderboard = [];
+            for(let i=0; i < 50; i++){
+                leaderboard.push({
+                    name: gameData.BOT_NAMES[i % gameData.BOT_NAMES.length] + (i >= gameData.BOT_NAMES.length ? ` ${Math.floor(i/gameData.BOT_NAMES.length)+1}` : ''),
+                    trophies: Math.floor(Math.random() * 10000) + 50,
+                    level: Math.floor(Math.random() * 100) + 1,
+                    isAI: true
+                });
+            }
+            localStorage.setItem('eliteRankLeaderboard', JSON.stringify(leaderboard));
+        }
+        function loadLeaderboard(){
+            const saved = localStorage.getItem('eliteRankLeaderboard');
+            if(saved){
+                leaderboard = JSON.parse(saved);
+            } else {
+                generateLeaderboard();
+            }
+             updateLeaderboard(player); // Oyuncunun her zaman listede olmasını sağla
+        }
+        function updateLeaderboard(currentPlayer){
+            if(!leaderboard || !currentPlayer) return;
+            const playerIndex = leaderboard.findIndex(p => !p.isAI && p.name === currentPlayer.name);
+            if(playerIndex > -1){
+                leaderboard[playerIndex].trophies = currentPlayer.trophies;
+                leaderboard[playerIndex].level = currentPlayer.level;
+            } else {
+                leaderboard.push({name: currentPlayer.name, trophies: currentPlayer.trophies, level: currentPlayer.level, isAI: false});
+            }
+        }
+        
+        // --- Olay Dinleyicileri ---
+        ui.usernameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.value.trim().length > 2) {
+                initGame(e.target.value.trim());
+            }
+        });
+        document.body.addEventListener('click', (e) => {
+            const actionTarget = e.target.closest('[data-action]');
+            if(!actionTarget || !player) return;
+            const action = actionTarget.dataset.action;
+
+            switch(action) {
+                case 'start-match': startMatch(); break;
+                case 'show-rank': {
+                    const currentRank = [...gameData.RANKS].reverse().find(r => player.trophies >= r.trophies);
+                    let rankHTML = gameData.RANKS.map(rank => {
+                        const isCurrent = rank.name === currentRank.name;
+                        const rankColor = rank.color.includes('gradient') ? `background-image: ${rank.color}` : `background-color: ${rank.color}`;
+                        const textColor = ['Gümüş', 'Elmas'].includes(rank.name) ? 'text-black' : 'text-white';
+                        return `<div class="rank-card p-4 flex justify-between items-center ${isCurrent ? 'border-2 border-yellow-400' : ''}">
+                                    <span class="font-bold text-lg">${rank.name}</span>
+                                    <span class="flex items-center gap-2">
+                                        <div class="w-5 h-5 rounded-full" style="${rankColor}"></div>
+                                        <span class="${textColor} font-semibold">${rank.trophies}+ Kupa</span>
+                                    </span>
+                                </div>`;
+                    }).join('');
+                    updateModal("Rank Kademeleri", rankHTML);
+                    break;
+                }
+                case 'show-shop': {
+                    const createItemHTML = (item, type) => {
+                        const owned = type === 'frames' ? !!player.ownedFrames[item.id] : player.ownedAvatars.includes(item.id);
+                        const equipped = type === 'frames' ? player.equippedFrame === item.id : player.equippedAvatar === item.id;
+                        let buttonHTML = '';
+                        if (equipped) {
+                            buttonHTML = `<button disabled class="btn bg-green-700 text-xs">Kuşanıldı</button>`;
+                        } else if (owned) {
+                            buttonHTML = `<button data-action="equip-item" data-type="${type}" data-id="${item.id}" class="btn bg-blue-500 text-xs">Kuşan</button>`;
+                        } else {
+                            buttonHTML = `<button data-action="buy-item" data-type="${type}" data-id="${item.id}" class="btn bg-purple-600 text-xs" ${player.money < getPrice(item) ? 'disabled' : ''}>Al: ${getPrice(item)} Para</button>`;
+                        }
+                        return `<div class="shop-card p-3 flex justify-between items-center">
+                                    <span class="flex items-center gap-2">${type === 'avatars' ? item.svg.replace('width="80%"', 'width="24px"').replace('height="80%"','height="24px"') : ''} ${item.name}</span>
+                                    ${buttonHTML}
+                                </div>`;
+                    };
+                    let shopHTML = '<h3 class="font-impact text-2xl text-yellow-400">Avatarlar</h3><div class="space-y-2 mb-4">';
+                    shopHTML += gameData.SHOP_ITEMS.avatars.map(item => createItemHTML(item, 'avatars')).join('');
+                    shopHTML += '</div><h3 class="font-impact text-2xl text-yellow-400">Çerçeveler</h3><div class="space-y-2 mb-4">';
+                    shopHTML += gameData.SHOP_ITEMS.frames.map(item => createItemHTML(item, 'frames')).join('');
+                    shopHTML += '</div><h3 class="font-impact text-2xl text-yellow-400">Güçlendirmeler</h3><div class="space-y-2">';
+                     gameData.SHOP_ITEMS.powerups.forEach(item => {
+                        shopHTML += `<div class="shop-card p-3 flex justify-between items-center">
+                                        <span>${item.name} (Sahip olunan: ${player.powerups[item.id] || 0})</span>
+                                        <button data-action="buy-item" data-type="powerups" data-id="${item.id}" class="btn bg-purple-600 text-xs" ${player.money < getPrice(item) ? 'disabled' : ''}>Al: ${getPrice(item)} Para</button>
+                                    </div>`;
+                    });
+                    shopHTML += '</div>';
+                    updateModal("Dükkan", shopHTML);
+                    break;
+                }
+                 case 'buy-item': {
+                    const { type, id } = e.target.dataset;
+                    const item = gameData.SHOP_ITEMS[type].find(i => i.id === id);
+                    if (item && player.money >= getPrice(item)) {
+                        player.money -= getPrice(item);
+                        if(type === 'frames') {
+                            player.ownedFrames[id] = { name: item.name, color: item.color };
+                        } else if (type === 'avatars') {
+                            player.ownedAvatars.push(id);
+                        } else if (type === 'powerups') {
+                            player.powerups[id] = (player.powerups[id] || 0) + 1;
+                        }
+                        showFeedback(`${item.name} satın alındı!`);
+                        saveGameData();
+                        updateAllUI();
+                        actionTarget.closest('.modal-overlay').classList.remove('visible'); // Modalı kapat
+                    } else {
+                        showFeedback("Yetersiz Bakiye!");
+                    }
+                    break;
+                }
+                case 'equip-item': {
+                    const { type, id } = e.target.dataset;
+                    if (type === 'frames') player.equippedFrame = id;
+                    if (type === 'avatars') player.equippedAvatar = id;
+                    showFeedback(`Yeni ${type==='frames' ? 'çerçeve' : 'avatar'} kuşanıldı!`);
+                    saveGameData();
+                    updateAllUI();
+                    actionTarget.closest('.modal-overlay').classList.remove('visible'); // Modalı kapat
+                    break;
+                }
+                case 'show-quests': {
+                    let questHTML = '';
+                    if (player && player.quests.daily && player.quests.daily.length > 0) {
+                        player.quests.daily.forEach((q, index) => {
+                            const progress = Math.min(100, (q.current / q.target) * 100);
+                            let buttonHTML = '';
+                            if (q.claimed) {
+                                buttonHTML = `<button class="btn text-xs bg-gray-600" disabled>Alındı</button>`;
+                            } else if (q.completed) {
+                                buttonHTML = `<button data-action="claim-quest" data-index="${index}" class="btn text-xs bg-green-500">Ödülü Al</button>`;
+                            } else {
+                                buttonHTML = `<button class="btn text-xs bg-gray-500" disabled>${q.current}/${q.target}</button>`;
+                            }
+                            questHTML += `<div class="quest-card p-3 flex flex-col">
+                                            <div class="flex justify-between items-center">
+                                                <span>${q.icon} ${q.text(q.target)}</span>
+                                                ${buttonHTML}
+                                            </div>
+                                            <div class="w-full bg-gray-700 h-2 mt-2 rounded-full"><div class="bg-yellow-400 h-2 rounded-full" style="width: ${progress}%"></div></div>
+                                            <div class="text-xs text-right mt-1 text-yellow-300">Ödül: ${q.reward.money} Para, ${q.reward.xp} XP</div>
+                                         </div>`;
+                        });
+                    } else { questHTML = '<p>Şu anda aktif görev yok.</p>'; }
+                    const remainingTime = player ? Math.max(0, Math.round((player.quests.questRefreshTime - Date.now()) / 60000)) : 120;
+                    questHTML += `<p class="mt-4 text-center text-sm text-gray-400">Yeni görevler ${remainingTime} dakika sonra.</p>`;
+                    updateModal("Günlük Görevler", questHTML);
+                    break;
+                }
+                 case 'claim-quest': {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    const quest = player.quests.daily[index];
+                    if (quest && quest.completed && !quest.claimed) {
+                        quest.claimed = true;
+                        player.money += quest.reward.money;
+                        addXp(quest.reward.xp);
+                        showFeedback(`Ödül alındı: +${quest.reward.money} Para, +${quest.reward.xp} XP!`);
+                        saveGameData();
+                        updateAllUI();
+                        e.target.closest('.modal-overlay').classList.remove('visible'); // Modalı kapat
+                    }
+                    break;
+                }
+                case 'show-leaderboard': {
+                    let boardHTML = '';
+                    const sortedBoard = [...leaderboard].sort((a,b) => b.trophies - a.trophies);
+                    sortedBoard.slice(0, 50).forEach((p, index) => { // Sadece ilk 50 kişiyi göster
+                        boardHTML += `<div class="leaderboard-row p-2 flex justify-between items-center ${!p.isAI ? 'bg-yellow-500/20 font-bold' : ''}">
+                                        <span class="w-1/2 truncate">#${index+1} ${p.name} (Sv. ${p.level})</span>
+                                        <span class="font-bold w-1/2 text-right">${p.trophies} Kupa</span>
+                                      </div>`;
+                    });
+                     const playerRank = sortedBoard.findIndex(p => !p.isAI && p.name === player.name) + 1;
+                    let title = "Liderlik Tablosu";
+                    if(playerRank > 0) {
+                        title += ` (Sıralaman: #${playerRank})`
+                    }
+                    updateModal(title, boardHTML);
+                    break;
+                }
+                case 'show-profile': {
+                    const stats = player.stats;
+                    const totalGames = stats.wins + stats.losses + stats.ties;
+                    const winRate = totalGames > 0 ? ((stats.wins / totalGames) * 100).toFixed(1) : 0;
+                    const mostUsedMove = Object.keys(stats.mostUsed).length > 0 ? Object.entries(stats.mostUsed).sort((a,b) => b[1] - a[1])[0][0] : "Yok";
+                    let profileHTML = `<div class="grid grid-cols-2 gap-4 text-lg">
+                                        <div class="shop-card text-center p-4"><p class="text-gray-400">Galibiyet</p><p class="text-3xl font-bold text-green-400">${stats.wins}</p></div>
+                                        <div class="shop-card text-center p-4"><p class="text-gray-400">Mağlubiyet</p><p class="text-3xl font-bold text-red-400">${stats.losses}</p></div>
+                                        <div class="shop-card text-center p-4"><p class="text-gray-400">Beraberlik</p><p class="text-3xl font-bold text-gray-300">${stats.ties}</p></div>
+                                        <div class="shop-card text-center p-4"><p class="text-gray-400">Kazanma Oranı</p><p class="text-3xl font-bold text-blue-400">%${winRate}</p></div>
+                                        <div class="shop-card text-center p-4 col-span-2"><p class="text-gray-400">En Çok Kullandığı</p><p class="text-3xl font-bold text-purple-400">${mostUsedMove}</p></div>
+                                       </div>`;
+                    updateModal(`${player.name} Profili`, profileHTML);
+                    break;
+                }
+            }
+        });
+        ui.match.buttonsContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.match-choice-btn')) {
+                playRound(e.target.closest('.match-choice-btn').dataset.choice);
+            }
+        });
+        ui.modal.closeBtn.addEventListener('click', () => ui.modal.overlay.classList.remove('visible'));
+    });
+    </script>
+</body>
+</html>
